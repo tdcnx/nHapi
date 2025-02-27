@@ -32,6 +32,30 @@
         }
 
         [Test]
+        public void AssertEr7Encoded_CharacterAfterAstm1238SegmentNameNotDelimiter_ThrowsInvalidOperationException()
+        {
+            // Arrange
+            var input = "H|^~\\&||\rOBR|1\rUNKNOWN|\rL|1\r";
+
+            // Act / Assert
+            Assert.That(
+                () => EncodingDetector.AssertEr7Encoded(input, MessageConstants.ASTM1238),
+                Throws.InvalidOperationException);
+        }
+
+        [Test]
+        public void AssertEr7Encoded_CharacterAfterAstm1394SegmentNameNotDelimiter_ThrowsInvalidOperationException()
+        {
+            // Arrange
+            var input = "H|^~\\&||\rOBR|1\rL|1\r";
+
+            // Act / Assert
+            Assert.That(
+                () => EncodingDetector.AssertEr7Encoded(input, MessageConstants.ASTM1394),
+                Throws.InvalidOperationException);
+        }
+
+        [Test]
         public void AssertEr7Encoded_ValidInput_NoExceptionThrown()
         {
             // Arrange

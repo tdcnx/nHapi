@@ -29,6 +29,7 @@ namespace NHapi.Base.PreParser
     using System.Collections.Generic;
     using System.Linq;
 
+    using NHapi.Base;
     using NHapi.Base.Parser;
 
     /// <summary>
@@ -58,15 +59,33 @@ namespace NHapi.Base.PreParser
         /// <exception cref="HL7Exception">When detecting message encoding fails or when parsing the message fails.</exception>
         public static string[] GetFields(string message, params string[] pathSpecs)
         {
-            var datumPaths = pathSpecs.Select(x => x.FromPathSpec()).ToList();
+            return GetFields(MessageConstants.HL7, message, pathSpecs);
+        }
+
+        /// <summary>
+        /// Extracts selected fields from a message.
+        /// </summary>
+        /// <param name="messageConstants">Message constant.</param>
+        /// <param name="message">An unparsed message from which to get fields.</param>
+        /// <param name="pathSpecs">
+        /// Terser-like paths to fields in the message.
+        /// See documentation for <see cref="NHapi.Base.Util.Terser"/>.
+        /// These paths are identical except that they start with the segment name (search flags and group
+        /// names are to be omitted as they are not relevant with unparsed ER7 messages).
+        /// </param>
+        /// <returns>Field values corresponding to the given paths.</returns>
+        /// <exception cref="HL7Exception">When detecting message encoding fails or when parsing the message fails.</exception>
+        public static string[] GetFields(MessageConstants messageConstants, string message, params string[] pathSpecs)
+        {
+            var datumPaths = pathSpecs.Select(x => x.FromPathSpec(messageConstants)).ToList();
 
             bool result;
             IDictionary<string, string> results;
-            if (EncodingDetector.IsEr7Encoded(message))
+            if (EncodingDetector.IsEr7Encoded(message, messageConstants))
             {
-                result = Er7.TryParseMessage(message, datumPaths, out results);
+                result = Er7.TryParseMessage(message, datumPaths, messageConstants, out results);
             }
-            else if (EncodingDetector.IsXmlEncoded(message))
+            else if (EncodingDetector.IsXmlEncoded(message, messageConstants))
             {
                 result = Xml.TryParseMessage(message, datumPaths, out results);
             }

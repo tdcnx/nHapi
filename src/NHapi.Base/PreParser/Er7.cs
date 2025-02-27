@@ -28,6 +28,7 @@ namespace NHapi.Base.PreParser
     using System.Collections.Generic;
     using System.Linq;
 
+    using NHapi.Base;
     using NHapi.Base.Parser;
 
     public static class Er7
@@ -61,6 +62,25 @@ namespace NHapi.Base.PreParser
         /// </returns>
         public static bool TryParseMessage(string message, IList<DatumPath> messageMask, out IDictionary<string, string> results)
         {
+            return TryParseMessage(message, messageMask, MessageConstants.HL7, out results);
+        }
+
+        /// <summary>
+        /// Parse message and return data found with provided <see cref="DatumPath">DatumPaths</see>.
+        /// </summary>
+        /// <param name="message">Er7 encoded hl7 v2 message.</param>
+        /// <param name="messageMask">The location/path to retrieve values from.</param>
+        /// <param name="messageConstants">Message constants.</param>
+        /// <param name="results">The values found in message.</param>
+        /// <returns>
+        /// <see langword="true"/> if parsed okay i.e. looks like Er7 encoded HL7.
+        /// <para>
+        /// We just barely check against HL7 structure, and ignore any elements / text that is unexpected
+        /// (that is, impossible in any HL7 message: independent of any message / segment definitions).
+        /// </para>
+        /// </returns>
+        public static bool TryParseMessage(string message, IList<DatumPath> messageMask, MessageConstants messageConstants, out IDictionary<string, string> results)
+        {
             messageMask ??= new List<DatumPath> { new () };
             results = new Dictionary<string, string>();
 
@@ -82,12 +102,12 @@ namespace NHapi.Base.PreParser
 
             var firstSegment = messageTokenizer.NextToken();
 
-            if (!ParseMshSegmentWhole(firstSegment, messageMask, results, out var encodingCharacters))
+            if (!ParseMshSegmentWhole(firstSegment, messageMask, results, messageConstants, out var encodingCharacters))
             {
                 return false;
             }
 
-            var segmentId2NextRepetitionIndex = new SortedDictionary<string, int> { { "MSH", 1 }, };
+            var segmentId2NextRepetitionIndex = new SortedDictionary<string, int> { { messageConstants.HeaderSegmentName, 1 }, };
 
             while (messageTokenizer.HasMoreTokens())
             {
@@ -96,6 +116,7 @@ namespace NHapi.Base.PreParser
                     messageMask,
                     encodingCharacters,
                     messageTokenizer.NextToken(),
+                    messageConstants,
                     results);
             }
 
@@ -106,6 +127,7 @@ namespace NHapi.Base.PreParser
             string segment,
             IList<DatumPath> messageMask,
             IDictionary<string, string> results,
+            MessageConstants messageConstants,
             out EncodingCharacters encodingCharacters)
         {
             var result = false;
@@ -113,15 +135,15 @@ namespace NHapi.Base.PreParser
             try
             {
                 encodingCharacters = new EncodingCharacters(
-                    segment[3],
-                    segment[4],
-                    segment[5],
-                    segment[6],
-                    segment[7]);
+                    segment[messageConstants.DelimiterIndices.FieldSeparatorIndex],
+                    segment[messageConstants.DelimiterIndices.ComponentSeparatorIndex],
+                    segment[messageConstants.DelimiterIndices.RepetitionSeparatorIndex],
+                    segment[messageConstants.DelimiterIndices.EscapeCharacterIndex],
+                    messageConstants.DelimiterIndices.SubcomponentSeparatorIndex == -1 ? char.MaxValue : segment[messageConstants.DelimiterIndices.SubcomponentSeparatorIndex]);
 
                 var handler = new Er7SegmentHandler(encodingCharacters, results)
                 {
-                    SegmentId = "MSH", SegmentRepetitionIndex = 0,
+                    SegmentId = messageConstants.HeaderSegmentName, SegmentRepetitionIndex = 0,
                     MessageMasks = messageMask ?? new List<DatumPath> { new () },
                 };
 
@@ -129,14 +151,14 @@ namespace NHapi.Base.PreParser
                 handler.PutDatum(nodeKey, encodingCharacters.FieldSeparator.ToString());
                 nodeKey.Insert(0, 1);
                 handler.PutDatum(nodeKey, encodingCharacters.ToString());
-
-                if (segment[8] == encodingCharacters.FieldSeparator)
+                var nextFieldDelimiter = messageConstants.HeaderSegmentName.Length + messageConstants.EncodingCharacters.Length + 1;
+                if (segment[nextFieldDelimiter] == encodingCharacters.FieldSeparator)
                 {
                     result = true;
 
                     nodeKey.Clear();
                     nodeKey.Add(2);
-                    ParseSegmentGuts(handler, segment.Substring(9), nodeKey);
+                    ParseSegmentGuts(handler, segment.Substring(nextFieldDelimiter + 1), nodeKey);
                 }
             }
             catch (IndexOutOfRangeException)
@@ -187,6 +209,7 @@ namespace NHapi.Base.PreParser
             IList<DatumPath> messageMask,
             EncodingCharacters encodingCharacters,
             string segment,
+            MessageConstants messageConstants,
             IDictionary<string, string> props)
         {
             try
@@ -196,7 +219,13 @@ namespace NHapi.Base.PreParser
                     throw new ArgumentNullException(nameof(encodingCharacters));
                 }
 
-                var segmentId = segment.Substring(0, 3);
+                var segmentHeaderLength = messageConstants.HeaderSegmentName.Length;
+                var segmentId = segment.Substring(0, segmentHeaderLength);
+                if (segment.Length > segmentHeaderLength && segment[segmentHeaderLength] != encodingCharacters.FieldSeparator)
+                {
+                    segmentHeaderLength = segment.IndexOf(encodingCharacters.FieldSeparator);
+                    segmentId = segment.Substring(0, segmentHeaderLength);
+                }
 
                 var currentSegmentRepetitionIndex = segmentId2NextRepetitionIndex.ContainsKey(segmentId)
                     ? segmentId2NextRepetitionIndex[segmentId]
@@ -209,7 +238,7 @@ namespace NHapi.Base.PreParser
 
                 parseThisSegment = messageMask.Any(m => m.StartsWith(segmentIdAsDatumPath) && !parseThisSegment);
 
-                if (parseThisSegment && (segment[3] == encodingCharacters.FieldSeparator))
+                if (parseThisSegment && (segment[segmentHeaderLength] == encodingCharacters.FieldSeparator))
                 {
                     var handler = new Er7SegmentHandler(encodingCharacters, props)
                     {
@@ -219,7 +248,7 @@ namespace NHapi.Base.PreParser
                     };
 
                     var nodeKey = new List<int> { 0 };
-                    ParseSegmentGuts(handler, segment.Substring(4), nodeKey);
+                    ParseSegmentGuts(handler, segment.Substring(segmentHeaderLength + 1), nodeKey);
                 }
             }
             catch (ArgumentOutOfRangeException)

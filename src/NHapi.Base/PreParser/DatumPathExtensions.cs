@@ -27,6 +27,7 @@ namespace NHapi.Base.PreParser
     using System;
     using System.Text.RegularExpressions;
 
+    using NHapi.Base;
     using NHapi.Base.Util;
 
     public static class DatumPathExtensions
@@ -39,6 +40,12 @@ namespace NHapi.Base.PreParser
             Justification = "Because these are constants and not just fields there is a rule clash.")]
         private const string PATH_SPEC_PATTERN =
             @"^(?<segment>[A-Z]{3})(\((?<segmentRepetition>\d+)\))?-((?<fieldNumber>(?:[1-9]|\d\d\d*))(\((?<fieldRepetition>\d+)\))?)(-(?<component>(?:[1-9]|\d\d\d*)))?(-(?<subComponent>(?:[1-9]|\d\d\d*)))?$";
+
+        private const string PathSpecPatternPrefix =
+            @"^(?<segment>[A-Z]";
+
+        private const string PathSpecPatternSuffix =
+                                @")(\((?<segmentRepetition>\d+)\))?-((?<fieldNumber>(?:[1-9]|\d\d\d*))(\((?<fieldRepetition>\d+)\))?)(-(?<component>(?:[1-9]|\d\d\d*)))?(-(?<subComponent>(?:[1-9]|\d\d\d*)))?$";
 
         /// <summary>
         /// <para>
@@ -153,12 +160,22 @@ namespace NHapi.Base.PreParser
 
         public static DatumPath FromPathSpec(this string pathSpec)
         {
+            return FromPathSpec(pathSpec, PATH_SPEC_PATTERN);
+        }
+
+        public static DatumPath FromPathSpec(this string pathSpec, MessageConstants messageConstants)
+        {
+            return FromPathSpec(pathSpec, $"{PathSpecPatternPrefix}{messageConstants.SegmentNameRegexQuantifier}{PathSpecPatternSuffix}");
+        }
+
+        public static DatumPath FromPathSpec(this string pathSpec, string pathSpecPattern)
+        {
             if (pathSpec is null)
             {
                 throw new ArgumentNullException(nameof(pathSpec));
             }
 
-            var match = Regex.Match(pathSpec, PATH_SPEC_PATTERN);
+            var match = Regex.Match(pathSpec, pathSpecPattern);
 
             if (!match.Success)
             {

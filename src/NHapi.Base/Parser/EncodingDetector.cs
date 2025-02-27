@@ -27,6 +27,7 @@
 namespace NHapi.Base.Parser
 {
     using System;
+    using System.Linq;
 
     /// <summary>
     /// Detects message encoding (ER7 / XML) without relying on any
@@ -46,20 +47,36 @@ namespace NHapi.Base.Parser
         /// </exception>
         public static void AssertEr7Encoded(string message)
         {
+            AssertEr7Encoded(message, MessageConstants.HL7);
+        }
+
+        /// <summary>
+        /// Asserts the message is Er7 Encoded.
+        /// </summary>
+        /// <param name="message">Message to be examined.</param>
+        /// <param name="messageConstants">Message constants.</param>
+        /// <exception cref="ArgumentException">
+        /// If the message is less than 4 characters long or the message does not start with MSH.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// If the 4th character of each segment was not a field delimiter.
+        /// </exception>
+        public static void AssertEr7Encoded(string message, MessageConstants messageConstants)
+        {
             // quit if the string is too short
-            if (message.Length < 4)
+            if (message.Length < (messageConstants.HeaderSegmentName.Length + 1))
             {
-                throw new ArgumentException("The message is less than 4 characters long");
+                throw new ArgumentException($"The message is less than {messageConstants.HeaderSegmentName.Length} characters long");
             }
 
             // string should start with "MSH"
-            if (!message.StartsWith("MSH", StringComparison.Ordinal))
+            if (!message.StartsWith(messageConstants.HeaderSegmentName, StringComparison.Ordinal))
             {
-                throw new ArgumentException("The message does not start with MSH");
+                throw new ArgumentException($"The message does not start with {messageConstants.HeaderSegmentName}");
             }
 
             // 4th character of each segment should be field delimiter
-            var fourthChar = message[3];
+            var fourthChar = message[messageConstants.HeaderSegmentName.Length];
             var tokens = message.Split(Convert.ToChar(PipeParser.SegmentDelimiter));
 
             for (var i = 0; i < tokens.Length; i++)
@@ -71,11 +88,13 @@ namespace NHapi.Base.Parser
                     {
                         token = PipeParser.StripLeadingWhitespace(token);
                     }
-
-                    if (token.Length >= 4 && token[3] != fourthChar)
+                    var oneMatched = messageConstants.HeaderNameSizes.Any(p => p < token.Length && token[p] == fourthChar);
+                    if (!oneMatched)
                     {
+                        var positions = string.Join(",", messageConstants.HeaderNameSizes.Select(n => n.ToString()).ToArray());
+                        var values = string.Join(",", messageConstants.HeaderNameSizes.Select(n => n < token.Length ? $"'{token[n]}'" : "''").ToArray());
                         throw new InvalidOperationException(
-                            $"The 4th character should have been a {token[3]}, but it was a {fourthChar}");
+                            $"The character at position(s) {positions} should have been a {fourthChar}, but it was/were {values}.");
                     }
                 }
             }
@@ -90,14 +109,27 @@ namespace NHapi.Base.Parser
         /// </exception>
         public static void AssertXmlEncoded(string message)
         {
-            if (!message.Contains("MSH.1>"))
+            AssertXmlEncoded(message, MessageConstants.HL7);
+        }
+
+        /// <summary>
+        /// Asserts the message is XML encoded.
+        /// </summary>
+        /// <param name="message">Message to be examined.</param>
+        /// <param name="messageConstants">Message constants.</param>
+        /// <exception cref="ArgumentException">
+        /// If <paramref name="message"/> does not contain "MSH.1>" or "MSH.2>".
+        /// </exception>
+        public static void AssertXmlEncoded(string message, MessageConstants messageConstants)
+        {
+            if (!message.Contains($"{messageConstants.HeaderSegmentName}.1>"))
             {
-                throw new ArgumentException("Expected to find MSH.1");
+                throw new ArgumentException($"Expected to find {messageConstants.HeaderSegmentName}.1");
             }
 
-            if (!message.Contains("MSH.2>"))
+            if (!message.Contains($"{messageConstants.HeaderSegmentName}.2>"))
             {
-                throw new ArgumentException("Expected to find MSH.2");
+                throw new ArgumentException($"Expected to find {messageConstants.HeaderSegmentName}.2");
             }
         }
 
@@ -108,9 +140,20 @@ namespace NHapi.Base.Parser
         /// <returns>true if message is ER7-encoded.</returns>
         public static bool IsEr7Encoded(string message)
         {
+            return IsEr7Encoded(message, MessageConstants.HL7);
+        }
+
+        /// <summary>
+        /// Returns true if the message is ER7 (pipe-and-hat) encoded.
+        /// </summary>
+        /// <param name="message">Message to be examined.</param>
+        /// <param name="messageConstants">Message constants.</param>
+        /// <returns>true if message is ER7-encoded.</returns>
+        public static bool IsEr7Encoded(string message, MessageConstants messageConstants)
+        {
             try
             {
-                AssertEr7Encoded(message);
+                AssertEr7Encoded(message, messageConstants);
                 return true;
             }
             catch (Exception)
@@ -133,9 +176,27 @@ namespace NHapi.Base.Parser
         /// <returns>true if message is XML-encoded.</returns>
         public static bool IsXmlEncoded(string message)
         {
+            return IsXmlEncoded(message, MessageConstants.HL7);
+        }
+
+        /// <summary>
+        /// Returns true if the message is XML encoded.
+        /// <para>
+        /// Note that this message does not perform a very robust check and does not
+        /// validate for well-formedness.
+        /// </para>
+        /// <para>
+        /// It is only intended to perform a simple check for XML vs.ER7 messages.
+        /// </para>
+        /// </summary>
+        /// <param name="message">Message to be examined.</param>
+        /// <param name="messageConstants">Message constants.</param>
+        /// <returns>true if message is XML-encoded.</returns>
+        public static bool IsXmlEncoded(string message, MessageConstants messageConstants)
+        {
             try
             {
-                AssertXmlEncoded(message);
+                AssertXmlEncoded(message, messageConstants);
                 return true;
             }
             catch (Exception)

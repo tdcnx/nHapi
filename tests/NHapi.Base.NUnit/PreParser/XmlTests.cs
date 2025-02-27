@@ -118,5 +118,54 @@
             Assert.That(parsed, Is.True);
             Assert.That(actualResults, Does.Contain(expectedValue));
         }
+        
+        [TestCase("H-12", "P")]
+        [TestCase("Q-2-2", "0000123")]
+        [TestCase("Q-5", "R")]
+        [TestCase("L-2", "N")]
+        public void TryParseMessage_ValidASTM1394QueryXml_ReturnsExpectedResult(string pathSpec, string expectedValue)
+        {
+            // Arrange
+            const string message = @"<?xml version=""1.0"" encoding=""utf-8""?>
+<QRY xmlns=""urn:hl7-org:v2xml"">
+  <H>
+    <H.1>|</H.1>
+    <H.2>\^&amp;</H.2>
+    <H.5>Strumento</H.5>
+    <H.12>P</H.12>
+    <H.13>LIS02-A2</H.13>
+    <H.14>20171106</H.14>
+  </H>
+  <Q>
+    <Q.1>1</Q.1>
+    <Q.2>
+      <RI.1>A*</RI.1>
+      <RI.2>0000123</RI.2>
+      <RI.3>0</RI.3>
+    </Q.2>
+    <Q.5>R</Q.5>
+    <Q.6>20181001140023</Q.6>
+    <Q.8>
+      <CN.1>Doctor</CN.1>
+    </Q.8>
+    <Q.9>123-456-7890</Q.9>
+    <Q.10>Extra</Q.10>
+    <Q.12>N</Q.12>
+  </Q>
+  <L>
+    <L.1>1</L.1>
+    <L.2>N</L.2>
+  </L>
+</QRY>";
+            var pathSpecs = new List<DatumPath> { pathSpec.FromPathSpec(MessageConstants.ASTM1394) };
+
+            // Act
+            var parsed = Xml.TryParseMessage(message, pathSpecs, out var results);
+            var actualResults = results.Select(r => r.Value).ToArray();
+
+            // Assert
+            Assert.That(parsed, Is.True);
+            Assert.That(actualResults, Does.Contain(expectedValue));
+        }
     }
 }
