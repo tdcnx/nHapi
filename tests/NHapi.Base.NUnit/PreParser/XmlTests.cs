@@ -122,6 +122,7 @@
         [TestCase("H-12", "P")]
         [TestCase("Q-2-2", "0000123")]
         [TestCase("Q-5", "R")]
+        [TestCase("Q-8-1", "Doctor")]
         [TestCase("L-2", "N")]
         public void TryParseMessage_ValidASTM1394QueryXml_ReturnsExpectedResult(string pathSpec, string expectedValue)
         {
