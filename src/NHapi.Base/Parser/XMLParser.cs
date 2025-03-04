@@ -70,6 +70,15 @@ namespace NHapi.Base.Parser
         {
         }
 
+        /// <param name="theFactory">
+        /// custom factory to use for model class lookup.
+        /// </param>
+        /// <param name="messageConstants">message constants</param>
+        protected XMLParser(IModelClassFactory theFactory, MessageConstants messageConstants)
+            : base(theFactory, messageConstants)
+        {
+        }
+
         /// <summary>
         /// Gets the preferred encoding of this Parser.
         /// </summary>
@@ -170,7 +179,7 @@ namespace NHapi.Base.Parser
         /// </summary>
         public override string GetEncoding(string message)
         {
-            return EncodingDetector.IsXmlEncoded(message) ? DefaultEncoding : null;
+            return EncodingDetector.IsXmlEncoded(message, this.MessageConstants) ? DefaultEncoding : null;
         }
 
         /// <summary>
@@ -489,10 +498,10 @@ namespace NHapi.Base.Parser
         /// <inheritdoc />
         public override string GetVersion(string message, ParserOptions parserOptions)
         {
-            var version = ParseLeaf(message, "MSH.12", 0);
+            var version = ParseLeaf(message, $"{this.MessageConstants.HeaderSegmentName}.{this.MessageConstants.VersionIdFieldIndex + 1}", 0);
             if (version == null || version.Trim().Length == 0)
             {
-                version = ParseLeaf(message, "VID.1", message.IndexOf("MSH.12", StringComparison.Ordinal));
+                version = ParseLeaf(message, "VID.1", message.IndexOf($"{this.MessageConstants.HeaderSegmentName}.{this.MessageConstants.VersionIdFieldIndex + 1}", StringComparison.Ordinal));
             }
 
             return version;
@@ -706,6 +715,13 @@ namespace NHapi.Base.Parser
             return value;
         }
 
+        protected virtual EncodingCharacters GetEncodingCharacters(IMessage message)
+        {
+            return EncodingCharacters.FromMessage(message, this.MessageConstants);
+        }
+
+
+
         /// <summary>
         /// Returns the expected XML element name for the given child of the given Segment.
         /// </summary>
@@ -780,7 +796,7 @@ namespace NHapi.Base.Parser
             {
                 try
                 {
-                    var encoding = EncodingCharacters.FromMessage(datatypeObject.Message);
+                    var encoding = GetEncodingCharacters(datatypeObject.Message);
                     int pos;
                     var oldPos = 0;
                     var escaping = false;

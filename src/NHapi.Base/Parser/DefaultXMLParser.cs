@@ -44,6 +44,15 @@ namespace NHapi.Base.Parser
         {
         }
 
+        /// <param name="theFactory">
+        /// custom factory to use for model class lookup.
+        /// </param>
+        /// <param name="messageConstants">message constants</param>
+        public DefaultXMLParser(IModelClassFactory theFactory, MessageConstants messageConstants)
+            : base(theFactory, messageConstants)
+        {
+        }
+
         /// <summary>Test harness. </summary>
         [STAThread]
         public static new void Main(string[] args)

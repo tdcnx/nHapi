@@ -134,12 +134,7 @@ namespace NHapi.Base.PreParser
             encodingCharacters = null;
             try
             {
-                encodingCharacters = new EncodingCharacters(
-                    segment[messageConstants.DelimiterIndices.FieldSeparatorIndex],
-                    segment[messageConstants.DelimiterIndices.ComponentSeparatorIndex],
-                    segment[messageConstants.DelimiterIndices.RepetitionSeparatorIndex],
-                    segment[messageConstants.DelimiterIndices.EscapeCharacterIndex],
-                    messageConstants.DelimiterIndices.SubcomponentSeparatorIndex == -1 ? char.MaxValue : segment[messageConstants.DelimiterIndices.SubcomponentSeparatorIndex]);
+                encodingCharacters = EncodingCharacters.FromEr7(segment, messageConstants);
 
                 var handler = new Er7SegmentHandler(encodingCharacters, results)
                 {
@@ -151,7 +146,7 @@ namespace NHapi.Base.PreParser
                 handler.PutDatum(nodeKey, encodingCharacters.FieldSeparator.ToString());
                 nodeKey.Insert(0, 1);
                 handler.PutDatum(nodeKey, encodingCharacters.ToString());
-                var nextFieldDelimiter = messageConstants.HeaderSegmentName.Length + messageConstants.EncodingCharacters.Length + 1;
+                var nextFieldDelimiter = messageConstants.HeaderSegmentName.Length + MessageConstants.FIELDDELIMITERLENGTH + messageConstants.EncodingCharacters.Length;
                 if (segment[nextFieldDelimiter] == encodingCharacters.FieldSeparator)
                 {
                     result = true;

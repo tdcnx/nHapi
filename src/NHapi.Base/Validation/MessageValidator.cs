@@ -38,12 +38,13 @@ namespace NHapi.Base.Validation
     /// </summary>
     /// <author>  Bryan Tripp.
     /// </author>
-    public class MessageValidator
+    public class MessageValidator : IMessageValidator
     {
         private static readonly IHapiLog OurLog;
 
         private readonly IValidationContext myContext;
         private readonly bool failOnError;
+        private readonly MessageConstants messageConstants;
 
         static MessageValidator()
         {
@@ -55,9 +56,21 @@ namespace NHapi.Base.Validation
         /// <param name="theFailOnErrorFlag">
         /// </param>
         public MessageValidator(IValidationContext theContext, bool theFailOnErrorFlag)
+            : this(theContext, theFailOnErrorFlag, MessageConstants.Default)
+        {
+        }
+
+        /// <param name="theContext">context that determines which validation rules apply.
+        /// </param>
+        /// <param name="theFailOnErrorFlag">
+        /// </param>
+        /// <param name="messageConstants">
+        /// </param>
+        public MessageValidator(IValidationContext theContext, bool theFailOnErrorFlag, MessageConstants messageConstants)
         {
             myContext = theContext;
             failOnError = theFailOnErrorFlag;
+            this.messageConstants = messageConstants;
         }
 
         [Obsolete("This method has been replaced by 'Validate'.")]
@@ -78,7 +91,7 @@ namespace NHapi.Base.Validation
         public virtual bool Validate(IMessage message)
         {
             var t = new Terser(message);
-            var rules = myContext.getMessageRules(message.Version, t.Get("MSH-9-1"), t.Get("MSH-9-2"));
+            var rules = myContext.getMessageRules(message.Version, t.Get($"{messageConstants.HeaderSegmentName}-9-1"), t.Get($"{messageConstants.HeaderSegmentName}-9-2"));
 
             ValidationException toThrow = null;
             var result = true;

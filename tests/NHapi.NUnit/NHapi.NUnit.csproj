@@ -43,6 +43,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\NHapi.Base\NHapi.Base.csproj" />
+    <ProjectReference Include="..\..\src\NHapi.Model.LIS02A2\NHapi.Model.LIS02A2.csproj" />
     <ProjectReference Include="..\..\src\NHapi.Model.V21\NHapi.Model.V21.csproj" />
     <ProjectReference Include="..\..\src\NHapi.Model.V22\NHapi.Model.V22.csproj" />
     <ProjectReference Include="..\..\src\NHapi.Model.V22_ZSegments\NHapi.Model.V22_ZSegments.csproj" />

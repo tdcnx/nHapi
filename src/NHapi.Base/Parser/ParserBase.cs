@@ -30,6 +30,7 @@ namespace NHapi.Base.Parser
     using System;
     using System.Collections;
     using System.Collections.Specialized;
+    using System.Configuration;
     using System.IO;
 
     using NHapi.Base.Log;
@@ -47,13 +48,14 @@ namespace NHapi.Base.Parser
         protected static readonly ParserOptions DefaultParserOptions = new ParserOptions();
         private static readonly IHapiLog Log = HapiLogFactory.GetHapiLog(typeof(ParserBase));
         private IValidationContext validationContext;
-        private MessageValidator messageValidator;
+        private IMessageValidator messageValidator;
+        private MessageConstants messageConstants;
 
         /// <summary>
         /// Uses DefaultModelClassFactory for model class lookup.
         /// </summary>
         protected ParserBase()
-            : this(new DefaultModelClassFactory())
+            : this(new DefaultModelClassFactory(), MessageConstants.Default)
         {
         }
 
@@ -61,8 +63,18 @@ namespace NHapi.Base.Parser
         /// custom factory to use for model class lookup.
         /// </param>
         protected ParserBase(IModelClassFactory theFactory)
+           : this(theFactory, MessageConstants.Default)
+        {
+        }
+
+        /// <param name="theFactory">
+        /// custom factory to use for model class lookup.
+        /// </param>
+        /// <param name="messageConstants">message constants</param>
+        protected ParserBase(IModelClassFactory theFactory, MessageConstants messageConstants)
         {
             Factory = theFactory;
+            this.messageConstants = messageConstants;
             ValidationContext = new DefaultValidation();
         }
 
@@ -81,7 +93,7 @@ namespace NHapi.Base.Parser
             set
             {
                 validationContext = value;
-                messageValidator = new MessageValidator(value, true);
+                messageValidator = CreateMessageValidator(value);
             }
         }
 
@@ -89,6 +101,11 @@ namespace NHapi.Base.Parser
         /// Gets the preferred encoding of this Parser.
         /// </summary>
         public abstract string DefaultEncoding { get; }
+
+        /// <summary>
+        /// Message constants
+        /// </summary>
+        protected MessageConstants MessageConstants { get => messageConstants; }
 
         /// <summary>
         /// Returns event->structure maps.
@@ -208,7 +225,7 @@ namespace NHapi.Base.Parser
             if (!SupportsEncoding(encoding))
             {
                 string startOfMessage = null;
-                if (message.StartsWith("MSH", StringComparison.Ordinal))
+                if (message.StartsWith(messageConstants.HeaderSegmentName, StringComparison.Ordinal))
                 {
                     var indexOfCarriageReturn = message.IndexOf('\r');
                     if (indexOfCarriageReturn > 0)
@@ -537,5 +554,15 @@ namespace NHapi.Base.Parser
 
             return result;
         }
+
+        /// <summary>
+        /// Create message validator
+        /// </summary>
+        /// <param name="value">a validation context</param>
+        protected virtual IMessageValidator CreateMessageValidator(IValidationContext value)
+        {
+            return new MessageValidator(value, true, messageConstants);
+        }
+
     }
 }

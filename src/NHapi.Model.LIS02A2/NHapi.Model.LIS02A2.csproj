@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net35;netstandard2.0</TargetFrameworks>
+    
+    <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
+    <PackageId>nhapi.model.lis02a2</PackageId>
+    <Version>3.2.0</Version>
+    <PackageDescription>Contains the data types, segments, and messages that follow the ASTM LIS02-A2 schema.</PackageDescription>
+    <Description>NHapi LIS02-A2</Description>
+    <IncludeCommonPackageInfo>true</IncludeCommonPackageInfo>
+    <IncludeCommonAssemblyAttributes>true</IncludeCommonAssemblyAttributes>
+    <NoWarn>1591</NoWarn>
+    
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NHapi.Base\NHapi.Base.csproj" />
+  </ItemGroup>
+  
+    <ItemGroup Condition=" '$(TargetFramework)' == 'net35' ">
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net35" Version="1.0.3">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+  
+    <ItemGroup>
+      <Folder Include="Group\" />
+    </ItemGroup>
+</Project>

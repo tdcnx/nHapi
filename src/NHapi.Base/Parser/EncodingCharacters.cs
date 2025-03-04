@@ -175,6 +175,18 @@ namespace NHapi.Base.Parser
         /// <exception cref="HL7Exception">If either MSH-1 or MSH-2 are not populated.</exception>
         public static EncodingCharacters FromMessage(IMessage message)
         {
+            return FromMessage(message, MessageConstants.Default);
+        }
+
+        /// <summary>
+        /// Returns an instance using the MSH-1 and MSH-2 values of the given message.
+        /// </summary>
+        /// <param name="message">The message.</param>
+        /// <param name="messageConstants">Message constants.</param>
+        /// <returns>the encoding characters for this message.</returns>
+        /// <exception cref="HL7Exception">If either MSH-1 or MSH-2 are not populated.</exception>
+        public static EncodingCharacters FromMessage(IMessage message, MessageConstants messageConstants)
+        {
             var firstSegment = (ISegment)message.GetStructure(message.Names[0]);
             var msh2 = (IPrimitive)firstSegment.GetField(2, 0);
 
@@ -192,7 +204,42 @@ namespace NHapi.Base.Parser
                 throw new HL7Exception("Field separator not populated");
             }
 
-            return new EncodingCharacters(fieldSeparatorValue[0], encodingCharactersValue);
+            return FromField(encodingCharactersValue, fieldSeparatorValue[0], messageConstants);
+        }
+
+        /// <summary>
+        /// Returns an instance using values extracted from message.
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="messageConstants"></param>
+        /// <returns></returns>
+        public static EncodingCharacters FromEr7(string message, MessageConstants messageConstants)
+        {
+            return new EncodingCharacters(
+                message[messageConstants.FieldIndexRelativeToMessage],
+                message[messageConstants.ComponentIndexRelativeToMessage],
+                message[messageConstants.RepetitionIndexRelativeToMessage],
+                message[messageConstants.EscapeIndexRelativeToMessage],
+                messageConstants.SubcomponentIndexRelativeToMessage < 0 ? char.MaxValue : message[messageConstants.SubcomponentIndexRelativeToMessage]);
+        }
+
+        /// <summary>
+        /// Returns an instance using field value and field separator.
+        /// </summary>
+        /// <param name="fieldValue">Encoding characters extracted from field.</param>
+        /// <param name="fieldSeparator">Field separator</param>
+        /// <param name="messageConstants">Message constants</param>
+        /// <returns></returns>
+        public static EncodingCharacters FromField(string fieldValue, char fieldSeparator, MessageConstants messageConstants)
+        {
+            var encChars = new char[4];
+
+            encChars[0] = fieldValue[messageConstants.ComponentIndexRelativeToField];
+            encChars[1] = fieldValue[messageConstants.RepetitionIndexRelativeToField];
+            encChars[2] = fieldValue[messageConstants.EscapeIndexRelativeToField];
+            encChars[3] = messageConstants.SubcomponentIndexRelativeToField < 0 ? char.MaxValue : fieldValue[messageConstants.SubcomponentIndexRelativeToField];
+
+            return new EncodingCharacters(fieldSeparator, new string(encChars));
         }
 
         /// <summary>

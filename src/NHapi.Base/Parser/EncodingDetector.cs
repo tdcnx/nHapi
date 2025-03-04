@@ -64,7 +64,7 @@ namespace NHapi.Base.Parser
         public static void AssertEr7Encoded(string message, MessageConstants messageConstants)
         {
             // quit if the string is too short
-            if (message.Length < (messageConstants.HeaderSegmentName.Length + 1))
+            if (message.Length < (messageConstants.HeaderSegmentName.Length + MessageConstants.FIELDDELIMITERLENGTH))
             {
                 throw new ArgumentException($"The message is less than {messageConstants.HeaderSegmentName.Length} characters long");
             }
@@ -75,8 +75,8 @@ namespace NHapi.Base.Parser
                 throw new ArgumentException($"The message does not start with {messageConstants.HeaderSegmentName}");
             }
 
-            // 4th character of each segment should be field delimiter
-            var fourthChar = message[messageConstants.HeaderSegmentName.Length];
+            // Character after each segment name should be field delimiter
+            var fieldDelimiter = message[messageConstants.HeaderSegmentName.Length];
             var tokens = message.Split(Convert.ToChar(PipeParser.SegmentDelimiter));
 
             for (var i = 0; i < tokens.Length; i++)
@@ -88,13 +88,25 @@ namespace NHapi.Base.Parser
                     {
                         token = PipeParser.StripLeadingWhitespace(token);
                     }
-                    var oneMatched = messageConstants.HeaderNameSizes.Any(p => p < token.Length && token[p] == fourthChar);
-                    if (!oneMatched)
+                    if (messageConstants.SegmentNameSizes.Length == 1)
                     {
-                        var positions = string.Join(",", messageConstants.HeaderNameSizes.Select(n => n.ToString()).ToArray());
-                        var values = string.Join(",", messageConstants.HeaderNameSizes.Select(n => n < token.Length ? $"'{token[n]}'" : "''").ToArray());
-                        throw new InvalidOperationException(
-                            $"The character at position(s) {positions} should have been a {fourthChar}, but it was/were {values}.");
+                        var indexAfterHeaderName = messageConstants.SegmentNameSizes[0];
+                        if (token.Length >= (indexAfterHeaderName + 1) && token[indexAfterHeaderName] != fieldDelimiter)
+                        {
+                            throw new InvalidOperationException(
+                                $"The character at position {indexAfterHeaderName} should have been a {token[indexAfterHeaderName]}, but it was a {fieldDelimiter}");
+                        }
+                    }
+                    else
+                    {
+                        var oneMatched = messageConstants.SegmentNameSizes.Any(p => p < token.Length && token[p] == fieldDelimiter);
+                        if (!oneMatched)
+                        {
+                            var positions = string.Join(",", messageConstants.SegmentNameSizes.Select(n => n.ToString()).ToArray());
+                            var values = string.Join(",", messageConstants.SegmentNameSizes.Select(n => n < token.Length ? $"'{token[n]}'" : "''").ToArray());
+                            throw new InvalidOperationException(
+                                $"The character at position(s) {positions} should have been a {fieldDelimiter}, but it was/were {values}.");
+                        }
                     }
                 }
             }
