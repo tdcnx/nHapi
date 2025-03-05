@@ -27,4 +27,8 @@
     <ItemGroup>
       <Folder Include="Group\" />
     </ItemGroup>
+  
+    <ItemGroup>
+      <EmbeddedResource Include="StructureMapping\StructurePatternMap.properties" />
+    </ItemGroup>
 </Project>

@@ -1,6 +1,10 @@
 ﻿namespace NHapi.Base.Parser
 {
+    using System;
+    using System.Collections;
+    using System.Collections.Specialized;
     using System.Text;
+    using System.Text.RegularExpressions;
 
     using NHapi.Base.Model;
     using NHapi.Base.Util;
@@ -26,6 +30,8 @@
         {
         }
 
+        private static IDictionary StructurePatternMap => StructurePatternsCollection.Instance.Maps;
+
         protected override EncodingCharacters GetValidEncodingCharacters(char fieldSep, ISegment header)
         {
             var encCharString = Terser.Get(header, 2, 0, 1, 1);
@@ -46,12 +52,46 @@
         }
 
         /// <inheritdoc />
-        protected override string GetStructure(string message, EncodingCharacters encodingCharacters, MessageConstants messageConstants, ref bool explicitlyDefined)
+        protected override string GetStructureName(string message, string version, EncodingCharacters encodingCharacters, ref bool explicitlyDefined)
         {
-            var messageStructure = "ORD";
-            var stringBuilder = new StringBuilder();
+            var messageStructure = string.Empty;
             explicitlyDefined = true;
+
+            var segmentNames = ConcatenateSegmentNames(message, encodingCharacters);
+
+            if (StructurePatternMap.Contains(version))
+            {
+                var p = (NameValueCollection)StructurePatternMap[version];
+                foreach (string key in p)
+                {
+                    var value = p[key];
+                    if (Regex.IsMatch(segmentNames, value))
+                    {
+                        messageStructure = key;
+                        break;
+                    }
+                }
+            }
+
+            if (messageStructure == string.Empty)
+            {
+                throw new HL7Exception(
+                    $"Can't determine message structure from the following segments '{segmentNames}'.",
+                    ErrorCode.UNSUPPORTED_MESSAGE_TYPE);
+            }
+
+            return messageStructure;
+        }
+
+        protected override void EnsurePresenceOfMessageTypeAndEventName(IMessage source, ISegment msh)
+        {
+            // do nothing
+        }
+
+        private static string ConcatenateSegmentNames(string message, EncodingCharacters encodingCharacters)
+        {
             var segments = message.Split('\r');
+            var stringBuilder = new StringBuilder();
             foreach (var segment in segments)
             {
                 var fields = segment.Split(encodingCharacters.FieldSeparator);
@@ -60,12 +100,7 @@
                     stringBuilder.Append(fields[0]);
                 }
             }
-            return messageStructure;
-        }
-
-        protected override void EnsurePresenceOfMessageTypeAndEventName(IMessage source, ISegment msh)
-        {
-            // do nothing
+            return stringBuilder.ToString();
         }
     }
 }

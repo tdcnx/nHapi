@@ -361,9 +361,9 @@ namespace NHapi.Base.Parser
         /// </returns>
         /// <throws>  HL7Exception. </throws>
         /// <throws>  EncodingNotSupportedException. </throws>
-        public virtual string GetMessageStructure(string message, MessageConstants messageConstants)
+        public virtual string GetMessageStructure(string message)
         {
-            return GetStructure(message, messageConstants).Structure;
+            return GetStructure(message, string.Empty).Structure;
         }
 
         // TODO: should this be public?
@@ -819,7 +819,7 @@ namespace NHapi.Base.Parser
         protected internal override IMessage DoParse(string message, string version, ParserOptions parserOptions)
         {
             // try to instantiate a message object of the right class
-            var structure = GetStructure(message, this.MessageConstants);
+            var structure = GetStructure(message, version);
             var m = InstantiateMessage(structure.Structure, version, structure.ExplicitlyDefined);
             Parse(m, message, parserOptions);
 
@@ -857,7 +857,7 @@ namespace NHapi.Base.Parser
         /// <returns>
         /// The message structure from MSH-9-3.
         /// </returns>
-        protected virtual string GetStructure(string message, EncodingCharacters encodingCharacters, MessageConstants messageConstants, ref bool explicitlyDefined)
+        protected virtual string GetStructureName(string message, string version, EncodingCharacters encodingCharacters, ref bool explicitlyDefined)
         {
             string messageStructure;
             string wholeFieldNine;
@@ -1028,15 +1028,15 @@ namespace NHapi.Base.Parser
         /// <returns>
         /// The message structure from MSH-9-3.
         /// </returns>
-        private MessageStructure GetStructure(string message, MessageConstants messageConstants)
+        private MessageStructure GetStructure(string message, string version)
         {
             var explicitlyDefined = true;
             string messageStructure;
 
             try
             {
-                var encodingCharacters = GetEncodingChars(message, messageConstants);
-                messageStructure = GetStructure(message, encodingCharacters, messageConstants, ref explicitlyDefined);
+                var encodingCharacters = GetEncodingChars(message, this.MessageConstants);
+                messageStructure = GetStructureName(message, version, encodingCharacters, ref explicitlyDefined);
             }
             catch (IndexOutOfRangeException e)
             {

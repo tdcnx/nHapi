@@ -50,6 +50,45 @@
         }
 
         [Test]
+        public void ParseAstmMessage_WithUnknownStructure_Hl7ExceptionIsThrown()
+        {
+            // Arrange
+            var message = "H|\\^&|||Strumento|||||||P|LIS02-A2|20171106\r"
+                        + "X|1\r"
+                        + "L|1|N\r";
+
+            var expectedExceptionMessage =
+                "Can't determine message structure from the following segments 'HXL'.";
+            var parser = new Astm1394PipeParser();
+
+            // Act
+            // Assert
+            Assert.That(
+                () => parser.Parse(message),
+                Throws.TypeOf<HL7Exception>()
+                    .With.Message.EqualTo(expectedExceptionMessage));
+        }
+
+        [Test]
+        public void ParseMessage_ButWithHL7Message_ExceptionIsThrown()
+        {
+            // Arrange
+            var message = "MSH|^~\\&|HIS|MedCenter|LIS|MedCenter|20060307110114||ORM^O01|MSGID20060307110114|P|2.3.1\r"
+                        + "PID|||12001||Jones^John^^^Mr.||19670824|M|||123 West St.^^Denver^CO^80020^USA|||||||\r"
+                        + "PV1||O|OP^PAREG^||||2342^Jones^Bob|||OP|||||||||2|||||||||||||||||||||||||20060307110111|\r"
+                        + "ORC|NW|20060307110114\r"
+                        + "OBR|1|20060307110114||003038^Urinalysis^L|||20060307110114";
+
+            var parser = new Astm1394PipeParser();
+
+            // Act
+            // Assert
+            Assert.That(
+                () => parser.Parse(message),
+                Throws.TypeOf<EncodingNotSupportedException>());
+        }
+
+        [Test]
         public void ParseAstmMessage_AndEncodeBack_MessageIsRestored()
         {
             // Arrange

@@ -1,9 +1,9 @@
 ﻿using System;
+
 using NHapi.Base;
+using NHapi.Base.Log;
 using NHapi.Base.Model;
 using NHapi.Base.Parser;
-using NHapi.Base.Log;
-
 using NHapi.Model.LIS02A2.Datatype;
 
 namespace NHapi.Model.LIS02A2.Segment
