@@ -8,6 +8,27 @@ All notable changes to this project will be documented in this file.
 
 ## Previous Releases
 
+## [3.2.4] - 2025-04-09
+
+If you reference the single nHapi nuget metapackage then this release is purely superficial and does not add anything, if you reference individual nHapi model packages then this brings you the same fix as the previous release.
+
+### Other
+
+- Updates individual model nuget packages to depend on the `nhapi.base` `3.2.3` which contains the transitive dependency security vulnerability fix
+- Removes direct reference to `nhapi.base` form the nHapi metapackage as there is already a transitive reference from the `nhapi.model.*` dependencies.
+
+By @milkshakeuk
+
+## [3.2.3] - 2025-04-07
+
+This release fixes a security vulnerability with a transitive dependency.
+
+### Other
+
+- [#678](https://github.com/nHapiNET/nHapi/issues/678) Update `System.Configuration.ConfigurationManager` dependency for `netstandard2.0` target framework to `8.0.1` to fix [transitive dependency vulnerability](https://github.com/advisories/GHSA-rxg9-xrhp-64gj).
+
+By @milkshakeuk
+
 ## [3.2.2] - 2023-01-24
 
 This release is purely superficial, it does not fix or add anything.

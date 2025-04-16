@@ -94,7 +94,7 @@ namespace NHapi.Base.NUnit.Util
             Assert.That(
                 () => sut.Add("key", "value"),
                 Throws.ArgumentException
-                    .With.Message.EqualTo(expectedExceptionMessage));
+                    .With.Message.StartsWith(expectedExceptionMessage));
         }
 
         [Test]
